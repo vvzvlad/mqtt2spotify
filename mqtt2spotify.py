@@ -11,7 +11,7 @@
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 import paho.mqtt.client as mqtt
-
+import time
 
 client_id = "2a233514cdc44daf9b4a2c08d37fc88c"
 client_secret = "05e29443545f48a1b4906b53397e5175"
@@ -98,6 +98,7 @@ def on_connect(client, userdata, flags, rc):
   print("Connected with result code "+str(rc))
   client.subscribe("spotify/wakeup/start")
   client.subscribe("spotify/transfer")
+  client.publish("spotify/status", payload="mqtt2spotify daemon started", qos=0, retain=False)
 
 
 def on_message(client, userdata, msg):
@@ -117,11 +118,20 @@ def on_message(client, userdata, msg):
 
 
 def main():
+  counter = 0
+  period = 10
   client = mqtt.Client()
   client.on_connect = on_connect
   client.on_message = on_message
   client.connect("192.168.88.111", 1883, 60)
-  client.loop_forever()
+  time.sleep(5)
+  client.loop_start()
+  while True:
+    uptime = counter * period
+    client.publish("spotify/status/uptime", str(uptime), qos=0, retain=False)
+    time.sleep(period)
+    counter = counter + 1
+  client.loop_stop()
 
 
 
