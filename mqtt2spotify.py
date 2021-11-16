@@ -24,7 +24,7 @@ import random
 
 def spotify_auth():
   global sp
-  sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope="playlist-read-private playlist-read-collaborative user-read-private user-read-playback-state user-modify-playback-state user-read-currently-playing user-read-playback-position user-read-recently-played app-remote-control user-library-read", cache_path="./cache_auth.json"))
+  sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope="playlist-read-private playlist-read-collaborative user-read-private user-read-playback-state user-modify-playback-state user-read-currently-playing user-read-playback-position user-read-recently-played app-remote-control user-library-read", cache_path="./auth/cache_auth.json"))
 
 def search_device(name):
   print("Search device: " + name)
