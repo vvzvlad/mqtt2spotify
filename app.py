@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S python3 -u
 
 #
 #############################################################################
@@ -34,6 +34,34 @@ def search_device(name):
       print("Found device: " + device['name'] + ": " + device['id'] + " (active: " + str(device['is_active']) + ")")
       return device['id'], device['is_active']
   return None
+
+#  Exception in thread Thread-1 (_thread_main):
+#Traceback (most recent call last):
+#File "/usr/local/lib/python3.10/threading.py", line 1009, in _bootstrap_inner
+#self.run()
+#File "/usr/local/lib/python3.10/threading.py", line 946, in run
+#self._target(*self._args, **self._kwargs)
+#File "/usr/local/lib/python3.10/site-packages/paho/mqtt/client.py", line 3591, in _thread_main
+#self.loop_forever(retry_first_connection=True)
+#File "/usr/local/lib/python3.10/site-packages/paho/mqtt/client.py", line 1756, in loop_forever
+#rc = self._loop(timeout)
+#File "/usr/local/lib/python3.10/site-packages/paho/mqtt/client.py", line 1164, in _loop
+#rc = self.loop_read()
+#File "/usr/local/lib/python3.10/site-packages/paho/mqtt/client.py", line 1556, in loop_read
+#rc = self._packet_read()
+#File "/usr/local/lib/python3.10/site-packages/paho/mqtt/client.py", line 2439, in _packet_read
+#rc = self._packet_handle()
+#File "/usr/local/lib/python3.10/site-packages/paho/mqtt/client.py", line 3033, in _packet_handle
+#return self._handle_publish()
+#File "/usr/local/lib/python3.10/site-packages/paho/mqtt/client.py", line 3327, in _handle_publish
+#self._handle_on_message(message)
+#File "/usr/local/lib/python3.10/site-packages/paho/mqtt/client.py", line 3570, in _handle_on_message
+#on_message(self, self._userdata, message)
+#File "/root/mqtt2spotify/mqtt2spotify.py", line 111, in on_message
+#check_play_and_start_playlist(playlist_name, device_name)
+#File "/root/mqtt2spotify/mqtt2spotify.py", line 90, in check_play_and_start_playlist
+#device_id, device_active = search_device(device_name)
+#TypeError: cannot unpack non-iterable NoneType object
 
 def resolve_and_transfer_playback(device_name):
   print("Transfer playback to device: " + device_name)
