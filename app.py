@@ -114,7 +114,12 @@ def on_message(client, userdata, msg):
     device_name = json_data['device']
     resolve_and_transfer_playback(device_name)
 
-
+#todo: play, pause, etc
+#https://developer.spotify.com/console/post-next/
+#https://developer.spotify.com/console/post-previous/
+#https://developer.spotify.com/console/put-repeat/
+#https://developer.spotify.com/console/put-pause/
+#https://developer.spotify.com/console/put-play/
 
 
 def main():
