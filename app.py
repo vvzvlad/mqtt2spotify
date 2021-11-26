@@ -121,26 +121,60 @@ def check_play_and_start_playlist(playlist_name, device_name):
   else:
     print("Playback is already active")
 
+def next_track():
+  print("Next track")
+  sp.next_track()
+
+def previous_track():
+  print("Previous track")
+  sp.previous_track()
+
+def pause_playback():
+  print("Pause playback")
+  sp.pause_playback()
+
+def start_playback():
+  print("Start playback")
+  sp.start_playback()
+
 
 def on_connect(client, userdata, flags, rc):
   print("Connected with result code "+str(rc))
   client.subscribe("spotify/wakeup/start")
   client.subscribe("spotify/transfer")
+  client.subscribe("spotify/next")
+  client.subscribe("spotify/previous")
+  client.subscribe("spotify/pause")
+  client.subscribe("spotify/start")
   client.publish("spotify/status", payload="mqtt2spotify daemon started", qos=0, retain=False)
 
 
 def on_message(client, userdata, msg):
   print("Received MQTT message:" + msg.topic + ": " + str(msg.payload))
+
   spotify_auth()
   if msg.topic == "spotify/wakeup/start":
     json_data = json.loads(msg.payload)
-    playlist_name = json_data['playlist']
-    device_name = json_data['device']
-    check_play_and_start_playlist(playlist_name, device_name)
+    playlist_name = json_data.get('playlist')
+    device_name = json_data.get('device')
+    if playlist_name is not None and device_name is not None:
+      check_play_and_start_playlist(playlist_name, device_name)
   elif msg.topic == "spotify/transfer":
     json_data = json.loads(msg.payload)
-    device_name = json_data['device']
+    device_name = json_data.get('device')
+    if device_name is not None:
+      check_play_and_start_playlist(playlist_name, device_name)
     resolve_and_transfer_playback(device_name)
+  elif msg.topic == "spotify/next":
+    next_track()
+  elif msg.topic == "spotify/previous":
+    previous_track()
+  elif msg.topic == "spotify/pause":
+    pause_playback()
+  elif msg.topic == "spotify/start":
+    start_playback()
+
+
 
 #todo: play, pause, etc
 #https://developer.spotify.com/console/post-next/
@@ -152,7 +186,7 @@ def on_message(client, userdata, msg):
 
 def main():
   counter = 0
-  period = 10
+  period = 60
   client = mqtt.Client()
   client.on_connect = on_connect
   client.on_message = on_message
