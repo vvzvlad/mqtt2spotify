@@ -140,7 +140,7 @@ def start_playback():
 
 def on_connect(client, userdata, flags, rc):
   print("Connected with result code "+str(rc))
-  client.subscribe("spotify/wakeup/start")
+  client.subscribe("spotify/wakeup")
   client.subscribe("spotify/transfer")
   client.subscribe("spotify/next")
   client.subscribe("spotify/previous")
@@ -153,7 +153,7 @@ def on_message(client, userdata, msg):
   print("Received MQTT message:" + msg.topic + ": " + str(msg.payload))
 
   spotify_auth()
-  if msg.topic == "spotify/wakeup/start":
+  if msg.topic == "spotify/wakeup":
     json_data = json.loads(msg.payload)
     playlist_name = json_data.get('playlist')
     device_name = json_data.get('device')
@@ -163,8 +163,7 @@ def on_message(client, userdata, msg):
     json_data = json.loads(msg.payload)
     device_name = json_data.get('device')
     if device_name is not None:
-      check_play_and_start_playlist(playlist_name, device_name)
-    resolve_and_transfer_playback(device_name)
+      resolve_and_transfer_playback(device_name)
   elif msg.topic == "spotify/next":
     next_track()
   elif msg.topic == "spotify/previous":
@@ -173,15 +172,6 @@ def on_message(client, userdata, msg):
     pause_playback()
   elif msg.topic == "spotify/start":
     start_playback()
-
-
-
-#todo: play, pause, etc
-#https://developer.spotify.com/console/post-next/
-#https://developer.spotify.com/console/post-previous/
-#https://developer.spotify.com/console/put-repeat/
-#https://developer.spotify.com/console/put-pause/
-#https://developer.spotify.com/console/put-play/
 
 
 def main():
