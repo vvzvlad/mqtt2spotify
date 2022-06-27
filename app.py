@@ -31,46 +31,28 @@ def search_device(name):
   devices = sp.devices()
   for device in devices['devices']:
     if device['name'] == name:
-      print("Found device: " + device['name'] + ": " + device['id'] + " (active: " + str(device['is_active']) + ")")
+      print("Found device: " + device['name'] + ", ID " + device['id'] + " (active: " + str(device['is_active']) + ")")
       return device['id'], device['is_active']
-  return None
-
-#  Exception in thread Thread-1 (_thread_main):
-#Traceback (most recent call last):
-#File "/usr/local/lib/python3.10/threading.py", line 1009, in _bootstrap_inner
-#self.run()
-#File "/usr/local/lib/python3.10/threading.py", line 946, in run
-#self._target(*self._args, **self._kwargs)
-#File "/usr/local/lib/python3.10/site-packages/paho/mqtt/client.py", line 3591, in _thread_main
-#self.loop_forever(retry_first_connection=True)
-#File "/usr/local/lib/python3.10/site-packages/paho/mqtt/client.py", line 1756, in loop_forever
-#rc = self._loop(timeout)
-#File "/usr/local/lib/python3.10/site-packages/paho/mqtt/client.py", line 1164, in _loop
-#rc = self.loop_read()
-#File "/usr/local/lib/python3.10/site-packages/paho/mqtt/client.py", line 1556, in loop_read
-#rc = self._packet_read()
-#File "/usr/local/lib/python3.10/site-packages/paho/mqtt/client.py", line 2439, in _packet_read
-#rc = self._packet_handle()
-#File "/usr/local/lib/python3.10/site-packages/paho/mqtt/client.py", line 3033, in _packet_handle
-#return self._handle_publish()
-#File "/usr/local/lib/python3.10/site-packages/paho/mqtt/client.py", line 3327, in _handle_publish
-#self._handle_on_message(message)
-#File "/usr/local/lib/python3.10/site-packages/paho/mqtt/client.py", line 3570, in _handle_on_message
-#on_message(self, self._userdata, message)
-#File "/root/mqtt2spotify/mqtt2spotify.py", line 111, in on_message
-#check_play_and_start_playlist(playlist_name, device_name)
-#File "/root/mqtt2spotify/mqtt2spotify.py", line 90, in check_play_and_start_playlist
-#device_id, device_active = search_device(device_name)
-#TypeError: cannot unpack non-iterable NoneType object
+  print("Not found device: " + name)
+  print("Devices: ")
+  print(devices)
+  return None, None
 
 def resolve_and_transfer_playback(device_name):
-  print("Transfer playback to device: " + device_name)
   device_id, device_active = search_device(device_name)
+  if device_active is None and device_name is None:
+    print("Not found device: " + device_name)
+    return
   if device_active == False:
-    print("Device is not active, transferred")
+    print("Device found, and is not active, transferred")
     sp.transfer_playback(device_id=device_id)
+    return
+  if device_active == True:
+    print("Device already is active, not transferred")
+    return
   else:
-    print("Device is active, not transferred")
+    print("Error transfer playback. device_id, device_active:", device_id, device_active)
+    return
 
 def get_user_current_play():
   cp = sp.current_playback()
@@ -133,9 +115,59 @@ def pause_playback():
   print("Pause playback")
   sp.pause_playback()
 
-def start_playback():
+def start_playback(device_name):
   print("Start playback")
+  #device_id, device_active = search_device(device_name)
+  #sp.start_playback(device_id=device_id)
   sp.start_playback()
+
+def ha_autodiscover(client):
+  device_section = {"identifiers":["mqtt2spotify"],"name":"mqtt2spotify", "manufacturer": "vvzvlad", "model": "mqtt2spotify bridge"}
+  client.publish("homeassistant/switch/spotify/play/config", json.dumps({
+      "name": "Spotify play",
+      "unique_id": "spotify.play",
+      "state_topic": "spotify/play/state",
+      "command_topic": "spotify/play",
+      "payload_on":"ON",
+      "device":device_section
+  }), retain=True)
+
+
+  client.publish("homeassistant/switch/spotify/pause/config", json.dumps({
+      "name": "Spotify pause",
+      "unique_id": "spotify.pause",
+      "state_topic": "spotify/pause/state",
+      "command_topic": "spotify/pause",
+      "payload_on":"ON",
+      "device": device_section
+  }), retain=True)
+
+  client.publish("homeassistant/switch/spotify/next/config", json.dumps({
+      "name": "Spotify next",
+      "unique_id": "spotify.next",
+      "state_topic": "spotify/next/state",
+      "command_topic": "spotify/next",
+      "payload_on":"ON",
+      "device": device_section
+  }), retain=True)
+
+  client.publish("homeassistant/switch/spotify/previous/config", json.dumps({
+      "name": "Spotify previous",
+      "unique_id": "spotify.previous",
+      "state_topic": "spotify/previous/state",
+      "command_topic": "spotify/previous",
+      "payload_on":"ON",
+      "device": device_section
+  }), retain=True)
+
+  client.publish("homeassistant/switch/spotify/transfer/config", json.dumps({
+      "name": "Spotify transfer",
+      "unique_id": "spotify.transfer",
+      "state_topic": "spotify/transfer/state",
+      "command_topic": "spotify/transfer",
+      "payload_on":"AppleTV",
+      "device": device_section
+  }), retain=True)
 
 
 def on_connect(client, userdata, flags, rc):
@@ -145,33 +177,41 @@ def on_connect(client, userdata, flags, rc):
   client.subscribe("spotify/next")
   client.subscribe("spotify/previous")
   client.subscribe("spotify/pause")
-  client.subscribe("spotify/start")
+  client.subscribe("spotify/play")
+  ha_autodiscover(client)
   client.publish("spotify/status", payload="mqtt2spotify daemon started", qos=0, retain=False)
 
 
+
 def on_message(client, userdata, msg):
-  print("Received MQTT message:" + msg.topic + ": " + str(msg.payload))
+  data = msg.payload.decode('utf-8')
+  print("Received MQTT message:" + msg.topic + ": " + data)
 
   spotify_auth()
   if msg.topic == "spotify/wakeup":
-    json_data = json.loads(msg.payload)
+    json_data = json.loads(data)
     playlist_name = json_data.get('playlist')
     device_name = json_data.get('device')
     if playlist_name is not None and device_name is not None:
       check_play_and_start_playlist(playlist_name, device_name)
   elif msg.topic == "spotify/transfer":
-    json_data = json.loads(msg.payload)
-    device_name = json_data.get('device')
-    if device_name is not None:
-      resolve_and_transfer_playback(device_name)
+    resolve_and_transfer_playback(data)
+
   elif msg.topic == "spotify/next":
     next_track()
   elif msg.topic == "spotify/previous":
     previous_track()
   elif msg.topic == "spotify/pause":
     pause_playback()
-  elif msg.topic == "spotify/start":
-    start_playback()
+  elif msg.topic == "spotify/play":
+    start_playback("AppleTV")
+
+  client.publish(msg.topic+"/state", 1)
+  time.sleep(1)
+  client.publish(msg.topic+"/state", 0)
+
+
+
 
 
 def main():
