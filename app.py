@@ -17,6 +17,8 @@ client_id = "2a233514cdc44daf9b4a2c08d37fc88c"
 client_secret = "05e29443545f48a1b4906b53397e5175"
 redirect_uri = "http://localhost:8888/"
 
+default_device = "AppleTV"
+
 import os
 import json
 import sys
@@ -25,6 +27,16 @@ import random
 def spotify_auth():
   global sp
   sp = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope="playlist-read-private playlist-read-collaborative user-read-private user-read-playback-state user-modify-playback-state user-read-currently-playing user-read-playback-position user-read-recently-played app-remote-control user-library-read", cache_path="./auth/cache_auth.json"))
+
+def search_active_device():
+  print("Search active device")
+  devices = sp.devices()
+  for device in devices['devices']:
+    if device['is_active'] == True:
+      print("Found active device: " + device['name'] + ", ID " + device['id'] + " (active: " + str(device['is_active']) + ")")
+      return device['id']
+  print("Not found active device")
+  return None
 
 def search_device(name):
   print("Search device: " + name)
@@ -37,6 +49,16 @@ def search_device(name):
   print("Devices: ")
   print(devices)
   return None, None
+
+def get_active_or_default_device():
+  active_device_id = search_active_device()
+  if active_device_id is not None:
+    print("Select active device")
+    return active_device_id
+  else:
+    print("Select default device")
+    default_device_id, default_device_active = search_device(default_device)
+    return default_device_id
 
 def resolve_and_transfer_playback(device_name):
   device_id, device_active = search_device(device_name)
@@ -115,11 +137,11 @@ def pause_playback():
   print("Pause playback")
   sp.pause_playback()
 
-def start_playback(device_name):
+def start_playback():
   print("Start playback")
-  #device_id, device_active = search_device(device_name)
-  #sp.start_playback(device_id=device_id)
-  sp.start_playback()
+  device_id = get_active_or_default_device()
+  sp.transfer_playback(device_id=device_id)
+
 
 def ha_autodiscover(client):
   device_section = {"identifiers":["mqtt2spotify"],"name":"mqtt2spotify", "manufacturer": "vvzvlad", "model": "mqtt2spotify bridge"}
@@ -204,13 +226,11 @@ def on_message(client, userdata, msg):
   elif msg.topic == "spotify/pause":
     pause_playback()
   elif msg.topic == "spotify/play":
-    start_playback("AppleTV")
+    start_playback()
 
   client.publish(msg.topic+"/state", 1)
   time.sleep(1)
   client.publish(msg.topic+"/state", 0)
-
-
 
 
 
