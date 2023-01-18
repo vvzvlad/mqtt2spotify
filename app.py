@@ -187,7 +187,7 @@ def ha_autodiscover(client):
       "unique_id": "spotify.transfer",
       "state_topic": "spotify/transfer/state",
       "command_topic": "spotify/transfer",
-      "payload_on":"AppleTV",
+      "payload_on":default_device,
       "device": device_section
   }), retain=True)
 
