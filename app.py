@@ -206,31 +206,103 @@ def on_connect(client, userdata, flags, rc):
 
 
 def on_message(client, userdata, msg):
+
   data = msg.payload.decode('utf-8')
   print("Received MQTT message:" + msg.topic + ": " + data)
 
-  spotify_auth()
-  if msg.topic == "spotify/wakeup":
-    json_data = json.loads(data)
-    playlist_name = json_data.get('playlist')
-    device_name = json_data.get('device')
-    if playlist_name is not None and device_name is not None:
-      check_play_and_start_playlist(playlist_name, device_name)
-  elif msg.topic == "spotify/transfer":
-    resolve_and_transfer_playback(data)
+  try:
+    spotify_auth()
+    if msg.topic == "spotify/wakeup":
+      json_data = json.loads(data)
+      playlist_name = json_data.get('playlist')
+      device_name = json_data.get('device')
+      if playlist_name is not None and device_name is not None:
+        check_play_and_start_playlist(playlist_name, device_name)
+    elif msg.topic == "spotify/transfer":
+      resolve_and_transfer_playback(data)
 
-  elif msg.topic == "spotify/next":
-    next_track()
-  elif msg.topic == "spotify/previous":
-    previous_track()
-  elif msg.topic == "spotify/pause":
-    pause_playback()
-  elif msg.topic == "spotify/play":
-    start_playback()
+    elif msg.topic == "spotify/next":
+      next_track()
+    elif msg.topic == "spotify/previous":
+      previous_track()
+    elif msg.topic == "spotify/pause":
+      pause_playback()
+    elif msg.topic == "spotify/play":
+      start_playback()
+  except spotipy.exceptions.SpotifyException as e:
+    print(e)
 
   client.publish(msg.topic+"/state", 1)
   time.sleep(1)
   client.publish(msg.topic+"/state", 0)
+
+
+#Search active device
+#Not found active device
+#Select default device
+#Search device: AppleTV
+#Found device: AppleTV, ID 85DCA6F7-81DF-4331-A39E-8C93AC692CE7 (active: False)
+#HTTP Error for PUT to https://api.spotify.com/v1/me/player with Params: {} returned 403 due to Player command failed: Premium required
+#Exception in thread Thread-1 (_thread_main):
+#Traceback (most recent call last):
+#  File "/usr/local/lib/python3.10/site-packages/spotipy/client.py", line 245, in _internal_call
+#    response.raise_for_status()
+#  File "/usr/local/lib/python3.10/site-packages/requests/models.py", line 1021, in raise_for_status
+#    raise HTTPError(http_error_msg, response=self)
+#requests.exceptions.HTTPError: 403 Client Error: Forbidden for url: https://api.spotify.com/v1/me/player
+#
+
+
+#  File "/root/pyapp/app.py", line 229, in on_message
+#    start_playback()
+#  File "/root/pyapp/app.py", line 143, in start_playback
+#    sp.transfer_playback(device_id=device_id)
+#  File "/usr/local/lib/python3.10/site-packages/spotipy/client.py", line 1726, in transfer_playback
+#    return self._put("me/player", payload=data)
+#  File "/usr/local/lib/python3.10/site-packages/spotipy/client.py", line 312, in _put
+#    return self._internal_call("PUT", url, payload, kwargs)
+#  File "/usr/local/lib/python3.10/site-packages/spotipy/client.py", line 267, in _internal_call
+#    raise SpotifyException(
+#spotipy.exceptions.SpotifyException: http status: 403, code:-1 - https://api.spotify.com/v1/me/player:
+# Player command failed: Premium required, reason: PREMIUM_REQUIRED
+#-- Not first container startup --
+
+#    start_playback()
+#  File "/root/pyapp/app.py", line 143, in start_playback
+#    sp.transfer_playback(device_id=device_id)
+#  File "/usr/local/lib/python3.10/site-packages/spotipy/client.py", line 1735, in transfer_playback
+#    return self._put("me/player", payload=data)
+#  File "/usr/local/lib/python3.10/site-packages/spotipy/client.py", line 312, in _put
+#    return self._internal_call("PUT", url, payload, kwargs)
+#  File "/usr/local/lib/python3.10/site-packages/spotipy/client.py", line 267, in _internal_call
+#    raise SpotifyException(
+#spotipy.exceptions.SpotifyException: http status: 404, code:-1 - https://api.spotify.com/v1/me/player:
+# Player command failed: No active device found, reason: NO_ACTIVE_DEVICE
+
+
+#HTTP Error for PUT to https://api.spotify.com/v1/me/player/pause with Params: {} returned 404 due to Player command failed: No active device found
+#Exception in thread Thread-1 (_thread_main):
+#Traceback (most recent call last):
+#  File "/usr/local/lib/python3.10/site-packages/spotipy/client.py", line 245, in _internal_call
+#    response.raise_for_status()
+#  File "/usr/local/lib/python3.10/site-packages/requests/models.py", line 1021, in raise_for_status
+#    raise HTTPError(http_error_msg, response=self)
+#requests.exceptions.HTTPError: 404 Client Error: Not Found for url: https://api.spotify.com/v1/me/player/pause
+#
+
+
+#  File "/root/pyapp/app.py", line 138, in pause_playback
+#    sp.pause_playback()
+#  File "/usr/local/lib/python3.10/site-packages/spotipy/client.py", line 1777, in pause_playback
+#    return self._put(self._append_device_id("me/player/pause", device_id))
+#  File "/usr/local/lib/python3.10/site-packages/spotipy/client.py", line 312, in _put
+#    return self._internal_call("PUT", url, payload, kwargs)
+#  File "/usr/local/lib/python3.10/site-packages/spotipy/client.py", line 267, in _internal_call
+#    raise SpotifyException(
+#spotipy.exceptions.SpotifyException: http status: 404, code:-1 - https://api.spotify.com/v1/me/player/pause:
+# Player command failed: No active device found, reason: NO_ACTIVE_DEVICE
+
+
 
 
 
