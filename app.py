@@ -17,7 +17,7 @@ client_id = "2a233514cdc44daf9b4a2c08d37fc88c"
 client_secret = "05e29443545f48a1b4906b53397e5175"
 redirect_uri = "http://localhost:8888/"
 
-default_device = "GTKing"
+default_device = "GTKing_PRO"
 
 import os
 import json
